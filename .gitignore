@@ -1,3 +1,5 @@
+audio/*
+*.pickle
 *.py[cod]
 
 # C extensions
