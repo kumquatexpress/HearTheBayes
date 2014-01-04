@@ -9,8 +9,8 @@ def pickle_filename(filename):
 
 def file_to_analysis(filename):
     a = audio.LocalAudioFile(filename)
-    if a.analysis:
-        return a.analysis
+    if a:
+        return a
 
 
 def pickle_analysis(analysis, f):
