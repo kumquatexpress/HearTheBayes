@@ -1,6 +1,7 @@
 audio/*
 *.pickle
 *.py[cod]
+*.sublime*
 
 # C extensions
 *.so

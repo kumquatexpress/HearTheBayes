@@ -2,6 +2,7 @@ import pickle_util as putil
 import echonest.remix.audio as audio
 import numpy
 import math
+import utils
 
 SECONDS_PER_MIN = 60
 
@@ -54,7 +55,7 @@ class Learner(object):
             temp_song_segs = []
 
             for seg in data.analysis.segments:
-                rhythm = round_note_length_base2(
+                rhythm = utils.round_note_length_base2(
                     float(seg.duration) / bpm * SECONDS_PER_MIN)
 
                 pitches = [(self.PITCH_DICTIONARY[a[0]], a[1]) for a in sorted(
@@ -91,22 +92,10 @@ class Learner(object):
                     if not sum_rhythm:
                         sum_rhythm = curr_rhythm
                     else:
-                        sum_rhythm = 1/(float(sum_rhythm + curr_rhythm)/(sum_rhythm*curr_rhythm))
+                        sum_rhythm = 1 / \
+                            (float(sum_rhythm + curr_rhythm)
+                             / (sum_rhythm * curr_rhythm))
                 last_encountered = curr_note
 
             self.note_list.append((last_encountered, sum_rhythm))
             self.rhythm_list.append(sum_rhythm)
-
-                
-
-
-def round_note_length_base2(frac):
-    """
-    Numbers will come in as something like 1/17.55, we want to
-    round them to 1/16 for 16th notes, etc.
-
-    This function returns the denominator of the note length, i.e.
-    1 for whole note, 2 for half, ... , 128 for 128th note.
-    """
-    denominator = float(1) / frac
-    return 2 ** round(math.log(denominator) / math.log(2), 0)
