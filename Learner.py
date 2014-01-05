@@ -2,6 +2,7 @@ import pickle_util as putil
 import echonest.remix.audio as audio
 import numpy
 import math
+from collections import defaultdict
 import Utils as utils
 
 SECONDS_PER_MIN = 60
@@ -32,17 +33,7 @@ class Learner(object):
         self.songs = []
         self.note_list = []
         self.notes = {}
-
-        for f in filenames:
-            audio = putil.load_pickle(f)
-            if not audio:
-                audio = putil.load_pickle(putil.make_pickle_audio(f))
-            self.songs.append({"data": audio, "bpm": audio.analysis.tempo,
-                               "time": audio.analysis.time_signature,
-                               "file": f})
-
-        self.find_pitch_sequences()
-        self.combine_same_pitch_for_length()
+        self.bigrams = defaultdict()
 
     def find_pitch_sequences(self):
         """
@@ -89,12 +80,12 @@ class Learner(object):
                 curr_note, curr_rhythm = n["pitches"][0][0], n["rhythm"]
                 # Check if the segment is a series of rests or not
                 # If so, treat it like a note change for mapping
-                if n["amplitude"] < current_song["loudness"] \
-                        * self.REST_THRESH or last_encountered is not "" \
+                if n["amplitude"] < current_song["loudness"] * self.REST_THRESH:
+                    curr_note = "REST"
+                if last_encountered is not "" \
                         and curr_note is not last_encountered:
                     # A note change occurred, record the note and summed rhythm
                     self.note_list.append((last_encountered, sum_rhythm))
-                    self.rhythm_list.append(sum_rhythm)
                     sum_rhythm = curr_rhythm
                 else:
                     if not sum_rhythm:
@@ -104,6 +95,41 @@ class Learner(object):
                 last_encountered = curr_note
 
             self.note_list.append((last_encountered, sum_rhythm))
+
+    def count_bigrams(self, inlist):
+        bigrams_dict = defaultdict(dict)
+        curr_note = ""
+        prev_note = ""
+        for note in inlist:
+            if prev_note is "":
+                prev_note = note
+                continue
+            if note not in bigrams_dict[prev_note]:
+                bigrams_dict[prev_note][note] = 0
+
+            bigrams_dict[prev_note][note] += 1
+            prev_note = note
+        return bigrams_dict
+
+    def populate_fields(self):
+        """
+        This method does all of the work for the Learner, analyzing
+        the audio and coming out with bigrams for generation.
+        """
+        for f in self.files:
+            audio = putil.load_pickle(f)
+            if not audio:
+                audio = putil.load_pickle(putil.make_pickle_audio(f))
+            self.songs.append({"data": audio, "bpm": audio.analysis.tempo,
+                               "time": audio.analysis.time_signature,
+                               "file": f})
+
+        self.find_pitch_sequences()
+        self.combine_same_pitch_for_length()
+
+        # Populate the bigram structure
+        self.bigrams["notes"] = self.count_bigrams(self.get_notes())
+        self.bigrams["rhythms"] = self.count_bigrams(self.get_rhythms())
 
     def get_notes(self):
         return zip(*self.note_list)[0]
