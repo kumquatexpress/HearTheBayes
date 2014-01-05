@@ -18,11 +18,16 @@ def main():
         print """
         Usage: ./HearBayes.py [audiofile_out]
         [length of generation in seconds][audiofiles_in, ..., ]
+
+        #TODO optional: --bpm=[number], --key=[C-B,+ for sharp, - for flat]
+                --time_sig=[number 1-4, only common time sigs allowed here]
         """
         return 0
-    file_out = sys.argv[1]
-    length = int(sys.argv[2])
-    files_in = sys.argv[3:]
+    arguments = sys.argv
+
+    file_out = arguments[1]
+    length = int(arguments[2])
+    files_in = arguments[3:]
 
     learner = l.Learner(list(files_in))
 
@@ -35,6 +40,15 @@ def main():
 
     generator.write_music(length)
     print "Finished!"
+
+    # Debugging information about target statistics to more accurately
+    # set the ngram length.
+    print("hit notes: %d" % generator.FOUND_NOTE)
+    print("missed notes: %d" % generator.NOT_FOUND_NOTE)
+    print("hit rhythms: %d" % generator.FOUND_RHYTHM)
+    print("missed rhythms: %d" % generator.NOT_FOUND_RHYTHM)
+
     return 0
 
-main()
+if __name__ == "__main__":
+    main()

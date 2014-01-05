@@ -2,8 +2,8 @@ import pickle_util as putil
 import echonest.remix.audio as audio
 import numpy
 import math
-from collections import defaultdict
-import Utils as utils
+from collections import defaultdict, deque
+import utils
 
 SECONDS_PER_MIN = 60
 
@@ -12,6 +12,7 @@ class Learner(object):
 
     # The threshold at which to call a segment a silence
     REST_THRESH = 1.6
+    NGRAM_LEN = 25
 
     PITCH_DICTIONARY = {
         0: "C",
@@ -33,7 +34,7 @@ class Learner(object):
         self.songs = []
         self.note_list = []
         self.notes = {}
-        self.bigrams = defaultdict()
+        self.ngrams = defaultdict()
 
     def find_pitch_sequences(self):
         """
@@ -47,7 +48,7 @@ class Learner(object):
             time = song["time"]["value"]
             temp_song_segs = []
 
-            for seg in data.analysis.segments:
+            for seg in data.analysis.beats:
                 rhythm = utils.round_note_length_base2(
                     float(seg.duration) / bpm * SECONDS_PER_MIN)
 
@@ -91,30 +92,31 @@ class Learner(object):
                     if not sum_rhythm:
                         sum_rhythm = curr_rhythm
                     else:
-                        sum_rhythm = sum_rhythm + curr_rhythm
+                        sum_rhythm = utils.round_note_length_base2(
+                            sum_rhythm + curr_rhythm)
                 last_encountered = curr_note
 
             self.note_list.append((last_encountered, sum_rhythm))
 
-    def count_bigrams(self, inlist):
-        bigrams_dict = defaultdict(dict)
+    def count_ngrams(self, inlist):
+        ngrams_dict = defaultdict(dict)
         curr_note = ""
-        prev_note = ""
+        prev_note = deque(maxlen=self.NGRAM_LEN)
         for note in inlist:
-            if prev_note is "":
-                prev_note = note
+            if len(prev_note) < self.NGRAM_LEN:
+                prev_note.append(note)
                 continue
-            if note not in bigrams_dict[prev_note]:
-                bigrams_dict[prev_note][note] = 0
+            if note not in ngrams_dict[tuple(prev_note)]:
+                ngrams_dict[tuple(prev_note)][note] = 0
 
-            bigrams_dict[prev_note][note] += 1
-            prev_note = note
-        return bigrams_dict
+            ngrams_dict[tuple(prev_note)][note] += 1
+            prev_note.append(note)
+        return ngrams_dict
 
     def populate_fields(self):
         """
         This method does all of the work for the Learner, analyzing
-        the audio and coming out with bigrams for generation.
+        the audio and coming out with ngrams for generation.
         """
         for f in self.files:
             audio = putil.load_pickle(f)
@@ -128,8 +130,8 @@ class Learner(object):
         self.combine_same_pitch_for_length()
 
         # Populate the bigram structure
-        self.bigrams["notes"] = self.count_bigrams(self.get_notes())
-        self.bigrams["rhythms"] = self.count_bigrams(self.get_rhythms())
+        self.ngrams["notes"] = self.count_ngrams(self.get_notes())
+        self.ngrams["rhythms"] = self.count_ngrams(self.get_rhythms())
 
     def get_notes(self):
         return zip(*self.note_list)[0]
