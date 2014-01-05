@@ -7,6 +7,7 @@
 #
 # Contains utilities used in the learner and generator for HearBayes
 #
+import math
 
 
 def round_note_length_base2(frac):
@@ -18,4 +19,4 @@ def round_note_length_base2(frac):
     1 for whole note, 2 for half, ... , 128 for 128th note.
     """
     denominator = float(1) / frac
-    return 2 ** round(math.log(denominator) / math.log(2), 0)
+    return float(1)/(2 ** round(math.log(denominator) / math.log(2), 0))
