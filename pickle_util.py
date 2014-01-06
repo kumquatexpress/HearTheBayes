@@ -29,7 +29,9 @@ def make_pickle_audio(filename):
 def make_pickle(ob, pickle_file=None):
     if not pickle_file:
         pickle_file = open("default.pickle", 'w')
-    pickle.dump(ob, open(pickle_file))
+    else:
+        pickle_file = open(pickle_file + ".pickle", 'w')
+    pickle.dump(ob, pickle_file)
 
 
 def load_pickle(filename=None):

@@ -47,14 +47,22 @@ class Learner(object):
             data = song["data"]
             time = song["time"]["value"]
             temp_song_segs = []
+            # Modularize all notes to be in the key of C,
+            # we will use this to shift notes later.
+            key = data.analysis.key["value"]
 
             for seg in data.analysis.beats:
                 rhythm = utils.round_note_length_base2(
                     float(seg.duration) / bpm * SECONDS_PER_MIN)
 
-                pitches = [(self.PITCH_DICTIONARY[a[0]], a[1]) for a in sorted(
-                    enumerate(seg.mean_pitches()),
-                    key=lambda x: x[1], reverse=True)]
+                likely_pitches = sorted(enumerate(seg.mean_pitches()),
+                                        key=lambda x: x[1])
+                pitches = []
+                for a in likely_pitches:
+                    transposed = a[0] - key
+                    if transposed < 0:
+                        transposed = 11 + transposed - 1
+                    pitches.append((self.PITCH_DICTIONARY[transposed], a[1]))
 
                 temp_song_segs.append({"count": seg.absolute_context()[0],
                                        "rhythm": rhythm, "pitches": pitches,
@@ -138,3 +146,6 @@ class Learner(object):
 
     def get_rhythms(self):
         return zip(*self.note_list)[1]
+
+    def save(self, filename):
+        putil.make_pickle(self, filename)

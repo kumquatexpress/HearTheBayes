@@ -26,6 +26,9 @@ class Generator(object):
         "REST": 0.00
     }
 
+    FREQUENCY_LIST = ["C", "C+", "D", "D+", "E", "F", "F+", "G", "G+",
+                      "A", "A+", "B"] * 2
+
     def __init__(self, learner, filename):
         self.learner = learner
 
@@ -40,9 +43,17 @@ class Generator(object):
             filename, format=format, mode='w',
             channels=1, samplerate=self.RATE)
 
-    def generate_notes(self, ngrams, initial, count):
+    def generate_notes(self, ngrams, initial, count, key):
         output = []
         current = deque(initial, maxlen=self.learner.NGRAM_LEN)
+
+        # Add in the key as a filter for next note
+        # Find its index first in a list of keys
+        frequency_list = self.FREQUENCY_LIST * 2
+        # filter_key gives back a list of indexes, look these up in the keys
+        key_filter = utils.filter_by_key_major()
+        key_filter = [frequency_list[i] for i in key_filter]
+
         while len(output) < count:
             # Check if current is a rare ending only note
             if tuple(current) not in ngrams:
@@ -53,12 +64,19 @@ class Generator(object):
                 if not output:
                     # This is the initial one, so we add
                     # the "random" choice into it to start off.
-                    output += current
+                    output += filter(lambda x: x in key_filter, current)
             else:
                 self.FOUND_NOTE += 1
+
             next = utils.get_result_from_distribution(
-                ngrams[tuple(current)])
-            output.append(next)
+                ngrams[tuple(current)], filt=key_filter)
+
+            # Account for the key here, unless it is a rest.
+            if next != "REST":
+                output.append(self.FREQUENCY_LIST[
+                    self.FREQUENCY_LIST.index(next) + key])
+            else:
+                output.append(next)
 
             current.append(next)
         return output
@@ -107,12 +125,20 @@ class Generator(object):
         self.output.write_frames(note)
         self.output.sync()
 
-    def write_music(self, length, bpm=75, note_initial="C",
-                    rhythm_initial="0.25"):
+    def write_music(self, length, bpm=75, initial_note="C",
+                    initial_rhythm="0.25", initial_key="F"):
+        """
+        Given all parameters, most of which have defaults,
+        generates output audio of at least length [length]
+        """
+        # Translate the string key into an index for our note generator
+        key_number = self.FREQUENCY_LIST.index(initial_key)
+
         rhythms = self.generate_rhythms(
-            self.learner.ngrams["rhythms"], rhythm_initial, bpm, length)
+            self.learner.ngrams["rhythms"], initial_rhythm, bpm, length)
         notes = self.generate_notes(
-            self.learner.ngrams["notes"], note_initial, len(rhythms))
+            self.learner.ngrams["notes"], initial_note, len(rhythms),
+            key_number)
 
         rhythms = map(lambda x: float(60) * x / bpm, rhythms)
         notes = map(lambda x: self.FREQUENCY_MAP[x], notes)
