@@ -48,7 +48,7 @@ def main():
     print "Generating new audio..."
     generator = g.Generator(learner, file_out)
 
-    generator.write_music(length, bpm=80, initial_key="C")
+    generator.write_music(length, bpm=120, initial_key="D+")
     print "Finished!"
 
     # Debugging information about target statistics to more accurately
@@ -57,6 +57,7 @@ def main():
     print("missed notes: %d" % generator.NOT_FOUND_NOTE)
     print("hit rhythms: %d" % generator.FOUND_RHYTHM)
     print("missed rhythms: %d" % generator.NOT_FOUND_RHYTHM)
+    print("not in key: %d" % generator.NOT_IN_KEY)
 
     return 0
 

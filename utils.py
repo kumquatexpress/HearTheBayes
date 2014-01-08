@@ -60,9 +60,9 @@ def reverse_dictionary(d):
     return {v: k for k, v in d.iteritems()}
 
 
-def filter_by_key_major():
+def filter_by_key_major(key):
     """
     Given a number, 0 = C, 2 = C+, ..., 11 = B, as a major key,
     returns a list of corresponding numbers to tones in that key.
     """
-    return [0, 2, 4, 5, 7, 9, 11]
+    return [key + 0, key + 2, key + 4, key + 5, key + 7, key + 9, key + 11]

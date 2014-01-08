@@ -61,7 +61,7 @@ class Learner(object):
                 for a in likely_pitches:
                     transposed = a[0] - key
                     if transposed < 0:
-                        transposed = 11 + transposed - 1
+                        transposed = 12 + transposed
                     pitches.append((self.PITCH_DICTIONARY[transposed], a[1]))
 
                 temp_song_segs.append({"count": seg.absolute_context()[0],

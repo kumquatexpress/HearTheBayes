@@ -37,6 +37,7 @@ class Generator(object):
         self.NOT_FOUND_RHYTHM = 0
         self.FOUND_NOTE = 0
         self.FOUND_RHYTHM = 0
+        self.NOT_IN_KEY = 0
 
         format = scikits.audiolab.Format()
         self.output = scikits.audiolab.Sndfile(
@@ -51,8 +52,9 @@ class Generator(object):
         # Find its index first in a list of keys
         frequency_list = self.FREQUENCY_LIST * 2
         # filter_key gives back a list of indexes, look these up in the keys
-        key_filter = utils.filter_by_key_major()
+        key_filter = utils.filter_by_key_major(key)
         key_filter = [frequency_list[i] for i in key_filter]
+        print key_filter
 
         while len(output) < count:
             # Check if current is a rare ending only note
@@ -73,8 +75,12 @@ class Generator(object):
 
             # Account for the key here, unless it is a rest.
             if next != "REST":
-                output.append(self.FREQUENCY_LIST[
-                    self.FREQUENCY_LIST.index(next) + key])
+                note = self.FREQUENCY_LIST[
+                    self.FREQUENCY_LIST.index(next) + key]
+                if note in key_filter:
+                    output.append(note)
+                else:
+                    self.NOT_IN_KEY += 1
             else:
                 output.append(next)
 
@@ -133,6 +139,7 @@ class Generator(object):
         """
         # Translate the string key into an index for our note generator
         key_number = self.FREQUENCY_LIST.index(initial_key)
+        print key_number
 
         rhythms = self.generate_rhythms(
             self.learner.ngrams["rhythms"], initial_rhythm, bpm, length)
