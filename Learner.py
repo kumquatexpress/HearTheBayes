@@ -1,7 +1,4 @@
 import pickle_util as putil
-import echonest.remix.audio as audio
-import numpy
-import math
 from collections import defaultdict, deque
 import utils
 
@@ -12,7 +9,7 @@ class Learner(object):
 
     # The threshold at which to call a segment a silence
     REST_THRESH = 1.6
-    NGRAM_LEN = 25
+    NGRAM_LEN = 16
 
     PITCH_DICTIONARY = {
         0: "C",
